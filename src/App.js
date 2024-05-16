@@ -15,6 +15,7 @@ import EditEmailtemplate from './emailtemplates/EditEmailtemplate';
 import AddEmailtemplate from './emailtemplates/AddEmailtemplate';
 import Emails from './emails';
 import ViewEmail from './emails/ViewEmail';
+import Grants from './grants';
 
 function App() {
   return (
@@ -37,6 +38,8 @@ function App() {
 
           <Route exact path="/emails" element={<Emails/>} />
           <Route exact path="/emails/:id" element={<ViewEmail/>} />
+
+          <Route exact path="/grants" element={<Grants/>} />
 
         </Routes>
       </Router>

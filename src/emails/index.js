@@ -18,8 +18,8 @@ export default function Emails() {
     const [selectedNonprofits, setSelectedNonprofits] = useState([]);
     const fieldMapping = {email: 'label',id: 'value'};
 
-    const [newEmail, setNewEmail]= useState({foundationEmail:"", emailTemplateId:"", nonprofitIds:[]});
-    const {foundationEmail, emailTemplateId, nonprofitIds}= newEmail
+    const [newEmail, setNewEmail]= useState({foundationEmail:"", emailTemplateId:"", nonprofitIds:[], ccTo:"", bccTo:""});
+    const {foundationEmail, emailTemplateId, nonprofitIds, ccTo, bccTo}= newEmail
     
     const onInputChange=(e)=>{
         setNewEmail({ ...newEmail, [e.target.name]: e.target.value });
@@ -189,6 +189,25 @@ export default function Emails() {
                     labelledBy="Select"
                 />
             </Form.Group>
+
+            <Form.Group className="mb-3">
+                <Form.Label>CC To</Form.Label>
+                <Form.Control type="email" 
+                    placeholder="Enter email" 
+                    name="ccTo"
+                    value={ccTo}
+                    onChange={(e)=> onInputChange(e)}/>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+                <Form.Label>BCC To</Form.Label>
+                <Form.Control type="email" 
+                    placeholder="Enter email" 
+                    name="bccTo"
+                    value={bccTo}
+                    onChange={(e)=> onInputChange(e)}/>
+            </Form.Group>
+
             {errorMessage? errorMessage:null}
           </Form>
         </Modal.Body>

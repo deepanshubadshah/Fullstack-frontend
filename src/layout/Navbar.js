@@ -22,6 +22,9 @@ export default function Navbar() {
                     <li class="nav-item px-3">
                         <a class="nav-link nav-opt" href="/emails">Emails</a>
                     </li>
+                    <li class="nav-item px-3">
+                        <a class="nav-link nav-opt" href="/grants">Grants</a>
+                    </li>
                 </ul>
             </div>
         </nav>

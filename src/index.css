@@ -99,3 +99,36 @@ code {
 .outer-li{
   position: 'relative' !important;
 }
+
+.carousel-control-next-icon{
+  height: 1rem !important;
+}
+.carousel-control-prev-icon{
+  height: 1rem !important;
+}
+
+.right{
+  float: right !important;
+}
+
+.left{
+  float: left !important;
+}
+
+.pagination{
+  --bs-pagination-padding-x: 1.25rem !important;
+  place-content: center;
+}
+
+.page-link{
+  font-size: 1.25rem !important;
+}
+
+.cir-icon{
+  font-size: 22px;
+}
+
+.scr-btn{
+  width: 5rem;
+  padding: 0 !important;
+}
