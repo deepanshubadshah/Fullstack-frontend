@@ -222,7 +222,7 @@ export default function Grants() {
                 <Form.Label>Upload Grants CSV here</Form.Label>
                 <Form.Control type="file" onChange={handleFileChange} size="sm" />
             </Form.Group>
-            {errorMessage? errorMessage:null}
+            {errorMessage && <p className="text-danger mt-2">{errorMessage}</p>}
           </Form>
         </Modal.Body>
         <Modal.Footer>
