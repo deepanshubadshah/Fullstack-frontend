@@ -132,3 +132,8 @@ code {
   width: 5rem;
   padding: 0 !important;
 }
+
+.filter-label{
+  vertical-align: middle;
+  font-weight: 500;
+}

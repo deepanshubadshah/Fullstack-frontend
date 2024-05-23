@@ -1,8 +1,10 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
-import { Button, Form, Modal, OverlayTrigger, Pagination, Tooltip } from 'react-bootstrap';
+import { Button, Col, Container, Form, FormControl, InputGroup, Modal, OverlayTrigger, Pagination, Row, Tooltip } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { BiChevronUp, BiChevronDown } from 'react-icons/bi'; 
+import { MultiSelect } from 'react-multi-select-component';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default function Grants() {
 
@@ -12,15 +14,23 @@ export default function Grants() {
     const [totalPages, setTotalPages] = useState(1);
     const [sortingColumn, setSortingColumn] = useState(null);
     const [sortingDirection, setSortingDirection] = useState('asc');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [inputSearchQuery, setInputSearchQuery] = useState('');
     const [scrollPosition, setScrollPosition] = useState(0);
     const [errorMessage, setErrorMessage] = useState('');
     const [file, setFile] = useState(null);
     const [sortConfig, setSortConfig] = useState(null);
+    const [uniqueTags, setUniqueTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [tagValues, setTagValues] = useState([]);
+    const [grantType, setGrantType] = useState('');
+    const [grantTypeOptions, setGrantTypeOptions] = useState([]);
 
     const [show, setShow] = useState(false);
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
+
+    const [filterObj, setFilterObj]= useState({tags:[], searchQuery:""});
+    const {tags, searchQuery}= filterObj;
 
     const SORT_ASC = 'asc';
     const SORT_DESC = 'desc';
@@ -29,13 +39,30 @@ export default function Grants() {
         loadGrants();
     }, []);
 
+    // const onInputChange=(e)=>{
+    //     setFilterObj({ ...filterObj, [e.target.name]: e.target.value });
+    // };
+
+    useEffect(() => {
+        let seleTags = selectedTags.map(a => a.value);
+        setFilterObj({ ...filterObj, ["tags"]: seleTags });
+        setTagValues(seleTags);
+        loadGrants(currentPage, sortingColumn, sortingDirection);
+    }, [selectedTags]);
+
     const formatHeading = (heading) => {
         return heading.replace(/([a-z])([A-Z])(?=[^A-Z])/g, '$1 $2').replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
 
     useEffect(() => {
-    loadGrants(currentPage, sortingColumn, sortingDirection, searchQuery);
-    }, [currentPage, sortingColumn, sortingDirection, searchQuery]);
+        loadGrants(currentPage, sortingColumn, sortingDirection);
+    }, [currentPage, sortingColumn, sortingDirection, tagValues, grantType]);
+
+    useEffect(() => {
+        if(inputSearchQuery.length >2 || inputSearchQuery.length==0){
+            loadGrants(currentPage, sortingColumn, sortingDirection);
+        }
+    }, [inputSearchQuery]);
 
     // const handleEdit = (row) => {
     // setEditingRow(row);
@@ -70,8 +97,9 @@ export default function Grants() {
     };
 
     const handleSearch = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
+        const query = e.target.value;
+        setInputSearchQuery(query);
+        setFilterObj({ ...filterObj, [e.target.name]: e.target.value });
     };
 
     const handleScroll = (e) => {
@@ -105,24 +133,38 @@ export default function Grants() {
         }));
       };
 
-    const loadGrants= async (currentPage, sortingColumn, sortingDirection,searchQuery)=>{
+    const tagsSelectData = (data) => {
+        return data.map(item => ({ label: item, value: item }));
+    };
+
+    const loadGrants= async (currentPage, sortingColumn, sortingDirection, filterObj)=>{
         try {
-            let apiUrl = `http://localhost:8080/grants?pageNumber=${currentPage}`;
-    
-            if (sortingColumn && sortingDirection) {
-            apiUrl += `&sortField=${sortingColumn}&sortOrder=${sortingDirection}`;
-            }
-            
-            // if (searchQuery) {
-            // apiUrl += `&search=${searchQuery}`;
-            // }
-            const result= await axios.get(apiUrl);
-            const grantData = result.data.grants;
-            setTotalPages(result.data.totalPages);
-            const processedData = preprocessData(grantData);
-            setGrants(processedData);
-            const formattedHeadings = Object.keys(grantData[0]).filter(heading => heading !== 'id');
-            setHeadings(formattedHeadings);
+            if(typeof currentPage !== 'undefined'){
+                let apiUrl = `http://localhost:8080/grants?pageNumber=${currentPage}`;
+        
+                if (sortingColumn && sortingDirection) {
+                apiUrl += `&sortField=${sortingColumn}&sortOrder=${sortingDirection}`;
+                }
+                if (tagValues && tagValues.length>0) {
+                    apiUrl += `&tagsFilter=${tagValues.join(', ')}`;
+                }
+                if (inputSearchQuery.length>2 || inputSearchQuery.length==0) {
+                    apiUrl += `&searchQueryVal=${inputSearchQuery}`;
+                }
+                if(grantType !=""){
+                    apiUrl += `&grantTyp=${grantType}`;
+                }
+                
+                const result= await axios.get(apiUrl);
+                const grantData = result.data.grants;
+                setTotalPages(result.data.totalPages);
+                setUniqueTags(tagsSelectData(result.data.tagsList));
+                setGrantTypeOptions(result.data.grantTypes);
+                const processedData = preprocessData(grantData);
+                setGrants(processedData);
+                const formattedHeadings = Object.keys(grantData[0]).filter(heading => heading !== 'id');
+                setHeadings(formattedHeadings);
+        }
         } catch(error){
             console.error("Error loading Grants:", error);
         }
@@ -135,17 +177,21 @@ export default function Grants() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const response = await fetch('http://localhost:8080/grants/upload', {
-        method: 'POST',
-        body: formData
-      });
-      handleClose(); loadGrants(1);
-      console.log('CSV File uploaded successfully');
-    } catch (error) {
-      setErrorMessage("Error uploading file! :(")
-      console.error('Error uploading file:', error);
+    if(!file){
+        setErrorMessage("Please choose a file to upload.");
+    }else{
+        formData.append('file', file);
+        try {
+        const response = await fetch('http://localhost:8080/grants/upload', {
+            method: 'POST',
+            body: formData
+        });
+        handleClose(); loadGrants(1);
+        console.log('CSV File uploaded successfully');
+        } catch (error) {
+        setErrorMessage("Error uploading file! :(");
+        console.error('Error uploading file:', error);
+        }
     }
   };
 
@@ -158,6 +204,49 @@ export default function Grants() {
 
     <div className='container'>
         <h4>Grants</h4>
+
+        {uniqueTags.length >0? <div className='container border shadow-sm rounded p-3 mb-2 mt-4'>
+            <Form className='row'>
+                <Form.Group className="mb-1 col-5">
+                    <Form.Control type="text" 
+                        placeholder="Search by Nonprofit, Submission Name and Email" 
+                        name="searchQuery"
+                        value={searchQuery}
+                        onChange={(e)=> handleSearch(e)}/>
+                </Form.Group>
+                <Form.Group className="mb-1 col-4">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="d-inline-block w-100 filter-label">Filter By Tags:</div>
+                        </div>
+                        <div class="col-7">
+                            <MultiSelect className="d-inline-block w-100"
+                                placeholder="Filter By Tags"
+                                text="Filter By Tags"
+                                options={uniqueTags}
+                                value={selectedTags}
+                                onChange={setSelectedTags}
+                                labelledBy="Filter By Tags"
+                            />
+                        </div>
+                    </div>
+                </Form.Group>
+
+                <Form.Group className="mb-1 col-3">
+                    <Form.Select class="form-control" 
+                        name="grantType"
+                        value={grantType}
+                        onChange={(e)=> setGrantType(e.target.value)}
+                        >
+                        <option value={""}>All Grant Types</option>
+                        { grantTypeOptions?grantTypeOptions.map(grantTypeOption =>(
+                            <option value={grantTypeOption}> {grantTypeOption }</option>)
+                        ):null}
+                    </Form.Select>
+                </Form.Group>
+            </Form>
+        </div>: null}
+
         {headings.length>0?<><div className='py-2' id="table-container" style={{ overflowX: 'auto' }} onScroll={handleScroll} >
         <table className="table border shadow table-bordered">
                 <thead>
